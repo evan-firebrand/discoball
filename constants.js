@@ -126,31 +126,6 @@ export const SCENE_PRESETS = {
     }
 };
 
-// Performance mode configurations (updated for higher limits)
-export const PERFORMANCE_MODES = {
-    low: {
-        name: 'Low Quality',
-        maxFacets: 150,
-        maxSpots: 50,
-        pixelRatio: 1,
-        description: 'Optimized for lower-end devices'
-    },
-    medium: {
-        name: 'Medium Quality', 
-        maxFacets: 400,
-        maxSpots: 150,
-        pixelRatio: 1.5,
-        description: 'Balanced performance and quality'
-    },
-    high: {
-        name: 'High Quality',
-        maxFacets: 1000,
-        maxSpots: 500,
-        pixelRatio: 'device', // Use device pixel ratio
-        description: 'Maximum quality - may impact performance'
-    }
-};
-
 // UI Control configurations
 export const CONTROL_CONFIGS = [
     { id: 'rotationSpeed', property: 'rotationSpeed', display: 'rotationSpeedValue', suffix: ' RPM', decimals: 1 },

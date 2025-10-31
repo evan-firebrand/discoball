@@ -1,5 +1,5 @@
 // Disco Ball Experience with Three.js
-import { DEFAULT_CONFIG, SCENE_PRESETS, PERFORMANCE_MODES, CONTROL_CONFIGS } from './constants.js';
+import { DEFAULT_CONFIG, SCENE_PRESETS, CONTROL_CONFIGS } from './constants.js';
 import { 
     generateRandomSpherePosition, 
     rayPlaneIntersection, 

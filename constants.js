@@ -185,10 +185,3 @@ export const MATH_CONSTANTS = {
     TWO_PI: Math.PI * 2,
     HALF_PI: Math.PI / 0.5
 };
-
-// Performance tracking constants
-export const PERFORMANCE_CONSTANTS = {
-    FPS_HISTORY_SIZE: 60, // Keep last 60 frames (1 second at 60fps)
-    FRAME_TIME_TARGET: 16.67, // 60fps = 16.67ms per frame
-    PERFORMANCE_UPDATE_INTERVAL: 100 // Update performance display every 100ms
-};

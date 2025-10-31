@@ -126,31 +126,6 @@ export const SCENE_PRESETS = {
     }
 };
 
-// Performance mode configurations (updated for higher limits)
-export const PERFORMANCE_MODES = {
-    low: {
-        name: 'Low Quality',
-        maxFacets: 150,
-        maxSpots: 50,
-        pixelRatio: 1,
-        description: 'Optimized for lower-end devices'
-    },
-    medium: {
-        name: 'Medium Quality', 
-        maxFacets: 400,
-        maxSpots: 150,
-        pixelRatio: 1.5,
-        description: 'Balanced performance and quality'
-    },
-    high: {
-        name: 'High Quality',
-        maxFacets: 1000,
-        maxSpots: 500,
-        pixelRatio: 'device', // Use device pixel ratio
-        description: 'Maximum quality - may impact performance'
-    }
-};
-
 // UI Control configurations
 export const CONTROL_CONFIGS = [
     { id: 'rotationSpeed', property: 'rotationSpeed', display: 'rotationSpeedValue', suffix: ' RPM', decimals: 1 },
@@ -182,13 +157,5 @@ export const CONTROL_CONFIGS = [
 export const MATH_CONSTANTS = {
     DEG_TO_RAD: Math.PI / 180,
     RAD_TO_DEG: 180 / Math.PI,
-    TWO_PI: Math.PI * 2,
-    HALF_PI: Math.PI / 0.5
-};
-
-// Performance tracking constants
-export const PERFORMANCE_CONSTANTS = {
-    FPS_HISTORY_SIZE: 60, // Keep last 60 frames (1 second at 60fps)
-    FRAME_TIME_TARGET: 16.67, // 60fps = 16.67ms per frame
-    PERFORMANCE_UPDATE_INTERVAL: 100 // Update performance display every 100ms
+    TWO_PI: Math.PI * 2
 };

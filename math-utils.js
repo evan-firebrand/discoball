@@ -50,7 +50,8 @@ export function rayPlaneIntersection(rayOrigin, rayDirection, planePoint, planeN
     // Intersection is behind ray origin
     if (t < 0) return null;
     
-    return rayOrigin.clone().add(rayDirection.clone().multiplyScalar(t));
+    // More efficient: avoid cloning rayDirection
+    return rayOrigin.clone().addScaledVector(rayDirection, t);
 }
 
 /**

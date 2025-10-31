@@ -829,21 +829,27 @@ class DiscoBallExperience {
     
     applyPerformanceMode() {
         const mode = this.config.performanceMode;
+        const modeConfig = PERFORMANCE_MODES[mode];
+        
+        if (!modeConfig) {
+            console.error('Unknown performance mode:', mode);
+            return;
+        }
         
         switch (mode) {
             case 'low':
                 // Optimize for lower-end devices
-                this.config.mirrorFacets = Math.min(this.config.mirrorFacets, 80);
-                this.config.maxSpots = Math.min(this.config.maxSpots, 30);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
+                this.config.mirrorFacets = Math.min(this.config.mirrorFacets, modeConfig.maxFacets);
+                this.config.maxSpots = Math.min(this.config.maxSpots, modeConfig.maxSpots);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, modeConfig.pixelRatio));
                 console.log('Applied LOW performance settings');
                 break;
                 
             case 'medium':
                 // Balanced performance and quality
-                this.config.mirrorFacets = Math.min(this.config.mirrorFacets, 150);
-                this.config.maxSpots = Math.min(this.config.maxSpots, 60);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+                this.config.mirrorFacets = Math.min(this.config.mirrorFacets, modeConfig.maxFacets);
+                this.config.maxSpots = Math.min(this.config.maxSpots, modeConfig.maxSpots);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, modeConfig.pixelRatio));
                 console.log('Applied MEDIUM performance settings');
                 break;
                 
@@ -927,38 +933,33 @@ class DiscoBallExperience {
             wobbleIntensity: this.config.wobbleIntensity
         };
         
-        // Save to localStorage
-        const savedPresets = JSON.parse(localStorage.getItem('discoPresets') || '{}');
-        const presetKey = name.toLowerCase().replace(/\s+/g, '_');
-        savedPresets[presetKey] = customPreset;
-        localStorage.setItem('discoPresets', JSON.stringify(savedPresets));
-        
-        // Add to current presets
-        this.presets[presetKey] = customPreset;
-        
-        // Update preset selector
-        this.updatePresetSelector();
-        
-        console.log('Preset saved:', name);
-        alert('Preset "' + name + '" saved successfully!');
+        try {
+            // Save to localStorage
+            const savedPresets = JSON.parse(localStorage.getItem('discoPresets') || '{}');
+            const presetKey = name.toLowerCase().replace(/\s+/g, '_');
+            savedPresets[presetKey] = customPreset;
+            localStorage.setItem('discoPresets', JSON.stringify(savedPresets));
+            
+            // Add to current presets
+            this.presets[presetKey] = customPreset;
+            
+            // Update preset selector
+            this.updatePresetSelector();
+            
+            console.log('Preset saved:', name);
+            alert('Preset "' + name + '" saved successfully!');
+        } catch (error) {
+            console.error('Error saving preset:', error);
+            alert('Failed to save preset. localStorage may be disabled or full.');
+        }
     }
     
     resetToDefaults() {
         if (confirm('Reset all settings to defaults?')) {
-            // Original default values
-            this.config.ballSize = 1.5;
-            this.config.rotationSpeed = 1.0;
-            this.config.lightIntensity = 1.5;
-            this.config.spotAngle = 30;
-            this.config.lightColor = '#ffffff';
-            this.config.lightAngleH = 45;
-            this.config.lightHeight = 4;
-            this.config.mirrorFacets = 100;
-            this.config.maxSpots = 50;
-            this.config.ambientLight = 0.2;
-            this.config.roomSize = 10;
-            this.config.enableWobble = true;
-            this.config.wobbleIntensity = 0.02;
+            // Reset to imported default values
+            Object.keys(DEFAULT_CONFIG).forEach(key => {
+                this.config[key] = DEFAULT_CONFIG[key];
+            });
             
             // Update displays and apply changes
             this.updateAllControlDisplays();
@@ -1037,21 +1038,25 @@ class DiscoBallExperience {
         const customOptions = presetSelector.querySelectorAll('option[data-custom="true"]');
         customOptions.forEach(option => option.remove());
         
-        // Load saved presets from localStorage
-        const savedPresets = JSON.parse(localStorage.getItem('discoPresets') || '{}');
-        
-        // Add custom presets to selector
-        Object.keys(savedPresets).forEach(key => {
-            const preset = savedPresets[key];
-            const option = document.createElement('option');
-            option.value = key;
-            option.textContent = preset.name + ' (Custom)';
-            option.setAttribute('data-custom', 'true');
-            presetSelector.appendChild(option);
+        try {
+            // Load saved presets from localStorage
+            const savedPresets = JSON.parse(localStorage.getItem('discoPresets') || '{}');
             
-            // Also add to presets object
-            this.presets[key] = preset;
-        });
+            // Add custom presets to selector
+            Object.keys(savedPresets).forEach(key => {
+                const preset = savedPresets[key];
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = preset.name + ' (Custom)';
+                option.setAttribute('data-custom', 'true');
+                presetSelector.appendChild(option);
+                
+                // Also add to presets object
+                this.presets[key] = preset;
+            });
+        } catch (error) {
+            console.error('Error loading saved presets from localStorage:', error);
+        }
     }
     
     updateFromControls(property) {

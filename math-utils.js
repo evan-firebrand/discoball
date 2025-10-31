@@ -6,7 +6,7 @@
  * on the main class or Three.js objects (except for Vector3 parameters).
  */
 
-import { MATH_CONSTANTS } from '../constants.js';
+import { MATH_CONSTANTS } from './constants.js';
 
 /**
  * Generate random spherical coordinates for positioning objects on a sphere surface

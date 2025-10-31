@@ -9,7 +9,7 @@ import {
     calculateMotorImperfections,
     calculateSmoothedFPS,
     angleUtils
-} from './utils/math-utils.js';
+} from './math-utils.js';
 
 class DiscoBallExperience {
     constructor() {
@@ -413,6 +413,11 @@ class DiscoBallExperience {
             if (this.spotLight.target) {
                 this.lightBeamMesh.lookAt(this.spotLight.target.position);
                 this.lightBeamMesh.rotateX(-Math.PI / 2); // Align with cone orientation
+                
+                // Move the beam to start from the light source
+                const beamOffset = new THREE.Vector3(0, distance / 2, 0);
+                beamOffset.applyQuaternion(this.lightBeamMesh.quaternion);
+                this.lightBeamMesh.position.add(beamOffset);
             }
             
             this.scene.add(this.lightBeamMesh);
@@ -1549,6 +1554,11 @@ class DiscoBallExperience {
         
         // Process each light source separately to create individual reflections
         activeLights.forEach((lightSource, lightIndex) => {
+            const lightPos = lightSource.light.position;
+            const lightColor = new THREE.Color(lightSource.color);
+            const lightToTarget = lightSource.light.target.position.clone().sub(lightPos).normalize();
+            const spotHalfAngle = lightSource.light.angle / 2;
+            
             this.facetData.forEach((facetInfo, facetIndex) => {
                 if (activeSpotIndex >= this.reflectionSpots.length) return;
                 
@@ -1560,26 +1570,22 @@ class DiscoBallExperience {
                 const worldNormal = facetInfo.localNormal.clone();
                 worldNormal.applyQuaternion(this.discoBall.quaternion);
                 
-                const lightPos = lightSource.light.position.clone();
-                const lightColor = new THREE.Color(lightSource.color);
-                
                 // Calculate incident light direction to this facet
                 const incidentDir = worldPos.clone().sub(lightPos).normalize();
                 
                 // Check if facet is facing the light (dot product > 0)
-                const facingLight = worldNormal.dot(incidentDir.clone().negate()) > 0.1;
+                const dotProduct = worldNormal.dot(incidentDir);
+                const facingLight = -dotProduct > 0.1;
                 
                 // Check if facet is within the spotlight cone
-                const lightToTarget = lightSource.light.target.position.clone().sub(lightPos).normalize();
                 const lightToFacet = worldPos.clone().sub(lightPos).normalize();
                 const angleToFacet = Math.acos(Math.max(-1, Math.min(1, lightToTarget.dot(lightToFacet))));
-                const spotHalfAngle = lightSource.light.angle / 2;
                 const withinSpotlightCone = angleToFacet <= spotHalfAngle;
                 
                 if (facingLight && withinSpotlightCone) {
                     // Calculate reflected ray using: R = I - 2(I·N)N
                     const reflectionDir = incidentDir.clone().sub(
-                        worldNormal.clone().multiplyScalar(2 * incidentDir.dot(worldNormal))
+                        worldNormal.clone().multiplyScalar(2 * dotProduct)
                     );
                     
                     // Find intersection with room surfaces
@@ -1597,7 +1603,7 @@ class DiscoBallExperience {
                         
                         // Calculate intensity based on angle and distance
                         const distance = worldPos.distanceTo(intersection.point);
-                        const angle = Math.abs(worldNormal.dot(incidentDir.clone().negate()));
+                        const angle = Math.abs(-dotProduct);
                         const baseIntensity = Math.pow(angle, 2);
                         const distanceFalloff = Math.max(0.1, 1 / (1 + distance * 0.1));
                         
@@ -1636,9 +1642,10 @@ class DiscoBallExperience {
             
             // Check illumination from all lights
             activeLights.forEach((lightSource) => {
-                const lightPos = lightSource.light.position.clone();
+                const lightPos = lightSource.light.position;
                 const incidentDir = worldPos.clone().sub(lightPos).normalize();
-                const facingLight = worldNormal.dot(incidentDir.clone().negate()) > 0.1;
+                const dotProduct = worldNormal.dot(incidentDir);
+                const facingLight = -dotProduct > 0.1;
                 
                 const lightToTarget = lightSource.light.target.position.clone().sub(lightPos).normalize();
                 const lightToFacet = worldPos.clone().sub(lightPos).normalize();
@@ -1647,7 +1654,7 @@ class DiscoBallExperience {
                 const withinSpotlightCone = angleToFacet <= spotHalfAngle;
                 
                 if (facingLight && withinSpotlightCone) {
-                    const angle = Math.abs(worldNormal.dot(incidentDir.clone().negate()));
+                    const angle = Math.abs(-dotProduct);
                     const intensity = Math.pow(angle, 2) * lightSource.intensity * 0.4;
                     maxFacetOpacity = Math.max(maxFacetOpacity, 0.6 + intensity);
                 }

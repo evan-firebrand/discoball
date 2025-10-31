@@ -182,6 +182,5 @@ export const CONTROL_CONFIGS = [
 export const MATH_CONSTANTS = {
     DEG_TO_RAD: Math.PI / 180,
     RAD_TO_DEG: 180 / Math.PI,
-    TWO_PI: Math.PI * 2,
-    HALF_PI: Math.PI / 0.5
+    TWO_PI: Math.PI * 2
 };

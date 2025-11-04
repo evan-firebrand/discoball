@@ -9,7 +9,7 @@ import {
     calculateMotorImperfections,
     calculateSmoothedFPS,
     angleUtils
-} from './utils/math-utils.js';
+} from './math-utils.js';
 
 class DiscoBallExperience {
     constructor() {
@@ -413,6 +413,11 @@ class DiscoBallExperience {
             if (this.spotLight.target) {
                 this.lightBeamMesh.lookAt(this.spotLight.target.position);
                 this.lightBeamMesh.rotateX(-Math.PI / 2); // Align with cone orientation
+                
+                // Move the beam to start from the light source
+                const beamOffset = new THREE.Vector3(0, distance / 2, 0);
+                beamOffset.applyQuaternion(this.lightBeamMesh.quaternion);
+                this.lightBeamMesh.position.add(beamOffset);
             }
             
             this.scene.add(this.lightBeamMesh);
@@ -824,21 +829,27 @@ class DiscoBallExperience {
     
     applyPerformanceMode() {
         const mode = this.config.performanceMode;
+        const modeConfig = PERFORMANCE_MODES[mode];
+        
+        if (!modeConfig) {
+            console.error('Unknown performance mode:', mode);
+            return;
+        }
         
         switch (mode) {
             case 'low':
                 // Optimize for lower-end devices
-                this.config.mirrorFacets = Math.min(this.config.mirrorFacets, 80);
-                this.config.maxSpots = Math.min(this.config.maxSpots, 30);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
+                this.config.mirrorFacets = Math.min(this.config.mirrorFacets, modeConfig.maxFacets);
+                this.config.maxSpots = Math.min(this.config.maxSpots, modeConfig.maxSpots);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, modeConfig.pixelRatio));
                 console.log('Applied LOW performance settings');
                 break;
                 
             case 'medium':
                 // Balanced performance and quality
-                this.config.mirrorFacets = Math.min(this.config.mirrorFacets, 150);
-                this.config.maxSpots = Math.min(this.config.maxSpots, 60);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+                this.config.mirrorFacets = Math.min(this.config.mirrorFacets, modeConfig.maxFacets);
+                this.config.maxSpots = Math.min(this.config.maxSpots, modeConfig.maxSpots);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, modeConfig.pixelRatio));
                 console.log('Applied MEDIUM performance settings');
                 break;
                 
@@ -922,38 +933,33 @@ class DiscoBallExperience {
             wobbleIntensity: this.config.wobbleIntensity
         };
         
-        // Save to localStorage
-        const savedPresets = JSON.parse(localStorage.getItem('discoPresets') || '{}');
-        const presetKey = name.toLowerCase().replace(/\s+/g, '_');
-        savedPresets[presetKey] = customPreset;
-        localStorage.setItem('discoPresets', JSON.stringify(savedPresets));
-        
-        // Add to current presets
-        this.presets[presetKey] = customPreset;
-        
-        // Update preset selector
-        this.updatePresetSelector();
-        
-        console.log('Preset saved:', name);
-        alert('Preset "' + name + '" saved successfully!');
+        try {
+            // Save to localStorage
+            const savedPresets = JSON.parse(localStorage.getItem('discoPresets') || '{}');
+            const presetKey = name.toLowerCase().replace(/\s+/g, '_');
+            savedPresets[presetKey] = customPreset;
+            localStorage.setItem('discoPresets', JSON.stringify(savedPresets));
+            
+            // Add to current presets
+            this.presets[presetKey] = customPreset;
+            
+            // Update preset selector
+            this.updatePresetSelector();
+            
+            console.log('Preset saved:', name);
+            alert('Preset "' + name + '" saved successfully!');
+        } catch (error) {
+            console.error('Error saving preset:', error);
+            alert('Failed to save preset. localStorage may be disabled or full.');
+        }
     }
     
     resetToDefaults() {
         if (confirm('Reset all settings to defaults?')) {
-            // Original default values
-            this.config.ballSize = 1.5;
-            this.config.rotationSpeed = 1.0;
-            this.config.lightIntensity = 1.5;
-            this.config.spotAngle = 30;
-            this.config.lightColor = '#ffffff';
-            this.config.lightAngleH = 45;
-            this.config.lightHeight = 4;
-            this.config.mirrorFacets = 100;
-            this.config.maxSpots = 50;
-            this.config.ambientLight = 0.2;
-            this.config.roomSize = 10;
-            this.config.enableWobble = true;
-            this.config.wobbleIntensity = 0.02;
+            // Reset to imported default values
+            Object.keys(DEFAULT_CONFIG).forEach(key => {
+                this.config[key] = DEFAULT_CONFIG[key];
+            });
             
             // Update displays and apply changes
             this.updateAllControlDisplays();
@@ -1032,21 +1038,25 @@ class DiscoBallExperience {
         const customOptions = presetSelector.querySelectorAll('option[data-custom="true"]');
         customOptions.forEach(option => option.remove());
         
-        // Load saved presets from localStorage
-        const savedPresets = JSON.parse(localStorage.getItem('discoPresets') || '{}');
-        
-        // Add custom presets to selector
-        Object.keys(savedPresets).forEach(key => {
-            const preset = savedPresets[key];
-            const option = document.createElement('option');
-            option.value = key;
-            option.textContent = preset.name + ' (Custom)';
-            option.setAttribute('data-custom', 'true');
-            presetSelector.appendChild(option);
+        try {
+            // Load saved presets from localStorage
+            const savedPresets = JSON.parse(localStorage.getItem('discoPresets') || '{}');
             
-            // Also add to presets object
-            this.presets[key] = preset;
-        });
+            // Add custom presets to selector
+            Object.keys(savedPresets).forEach(key => {
+                const preset = savedPresets[key];
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = preset.name + ' (Custom)';
+                option.setAttribute('data-custom', 'true');
+                presetSelector.appendChild(option);
+                
+                // Also add to presets object
+                this.presets[key] = preset;
+            });
+        } catch (error) {
+            console.error('Error loading saved presets from localStorage:', error);
+        }
     }
     
     updateFromControls(property) {
@@ -1549,6 +1559,11 @@ class DiscoBallExperience {
         
         // Process each light source separately to create individual reflections
         activeLights.forEach((lightSource, lightIndex) => {
+            const lightPos = lightSource.light.position;
+            const lightColor = new THREE.Color(lightSource.color);
+            const lightToTarget = lightSource.light.target.position.clone().sub(lightPos).normalize();
+            const spotHalfAngle = lightSource.light.angle / 2;
+            
             this.facetData.forEach((facetInfo, facetIndex) => {
                 if (activeSpotIndex >= this.reflectionSpots.length) return;
                 
@@ -1560,26 +1575,22 @@ class DiscoBallExperience {
                 const worldNormal = facetInfo.localNormal.clone();
                 worldNormal.applyQuaternion(this.discoBall.quaternion);
                 
-                const lightPos = lightSource.light.position.clone();
-                const lightColor = new THREE.Color(lightSource.color);
-                
                 // Calculate incident light direction to this facet
                 const incidentDir = worldPos.clone().sub(lightPos).normalize();
                 
                 // Check if facet is facing the light (dot product > 0)
-                const facingLight = worldNormal.dot(incidentDir.clone().negate()) > 0.1;
+                const dotProduct = worldNormal.dot(incidentDir);
+                const facingLight = -dotProduct > 0.1;
                 
                 // Check if facet is within the spotlight cone
-                const lightToTarget = lightSource.light.target.position.clone().sub(lightPos).normalize();
                 const lightToFacet = worldPos.clone().sub(lightPos).normalize();
                 const angleToFacet = Math.acos(Math.max(-1, Math.min(1, lightToTarget.dot(lightToFacet))));
-                const spotHalfAngle = lightSource.light.angle / 2;
                 const withinSpotlightCone = angleToFacet <= spotHalfAngle;
                 
                 if (facingLight && withinSpotlightCone) {
                     // Calculate reflected ray using: R = I - 2(I·N)N
                     const reflectionDir = incidentDir.clone().sub(
-                        worldNormal.clone().multiplyScalar(2 * incidentDir.dot(worldNormal))
+                        worldNormal.clone().multiplyScalar(2 * dotProduct)
                     );
                     
                     // Find intersection with room surfaces
@@ -1597,7 +1608,7 @@ class DiscoBallExperience {
                         
                         // Calculate intensity based on angle and distance
                         const distance = worldPos.distanceTo(intersection.point);
-                        const angle = Math.abs(worldNormal.dot(incidentDir.clone().negate()));
+                        const angle = Math.abs(-dotProduct);
                         const baseIntensity = Math.pow(angle, 2);
                         const distanceFalloff = Math.max(0.1, 1 / (1 + distance * 0.1));
                         
@@ -1636,9 +1647,10 @@ class DiscoBallExperience {
             
             // Check illumination from all lights
             activeLights.forEach((lightSource) => {
-                const lightPos = lightSource.light.position.clone();
+                const lightPos = lightSource.light.position;
                 const incidentDir = worldPos.clone().sub(lightPos).normalize();
-                const facingLight = worldNormal.dot(incidentDir.clone().negate()) > 0.1;
+                const dotProduct = worldNormal.dot(incidentDir);
+                const facingLight = -dotProduct > 0.1;
                 
                 const lightToTarget = lightSource.light.target.position.clone().sub(lightPos).normalize();
                 const lightToFacet = worldPos.clone().sub(lightPos).normalize();
@@ -1647,7 +1659,7 @@ class DiscoBallExperience {
                 const withinSpotlightCone = angleToFacet <= spotHalfAngle;
                 
                 if (facingLight && withinSpotlightCone) {
-                    const angle = Math.abs(worldNormal.dot(incidentDir.clone().negate()));
+                    const angle = Math.abs(-dotProduct);
                     const intensity = Math.pow(angle, 2) * lightSource.intensity * 0.4;
                     maxFacetOpacity = Math.max(maxFacetOpacity, 0.6 + intensity);
                 }

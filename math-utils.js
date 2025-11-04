@@ -6,7 +6,7 @@
  * on the main class or Three.js objects (except for Vector3 parameters).
  */
 
-import { MATH_CONSTANTS } from '../constants.js';
+import { MATH_CONSTANTS } from './constants.js';
 
 /**
  * Generate random spherical coordinates for positioning objects on a sphere surface
@@ -50,7 +50,8 @@ export function rayPlaneIntersection(rayOrigin, rayDirection, planePoint, planeN
     // Intersection is behind ray origin
     if (t < 0) return null;
     
-    return rayOrigin.clone().add(rayDirection.clone().multiplyScalar(t));
+    // More efficient: avoid cloning rayDirection
+    return rayOrigin.clone().addScaledVector(rayDirection, t);
 }
 
 /**
